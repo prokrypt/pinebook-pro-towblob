@@ -1,0 +1,48 @@
+// TEST D2 (2026-10-28): the blob's speeds that the vendor BL31 really switches to: 328 416 666 856MHz.
+// The blob also lists 528 (table at blob offset 0x23710), but the BL31 ignores it like 400/800 ("Got wrong frequency").
+// Pinebook Pro DRAM frequency scaling (DMC devfreq), 2026-10-28 test (~/notes/System/Boot_Chain/Tow-Boot_pbp2z.txt).
+// Only works with Rockchip's BL31 (rkbin rk3399_bl31_v1.36.elf, the pbp2z-a FIT on the SD card): with upstream
+// TF-A the first rate change locks the machine up (2026-10-09). So the dtb with this is only for a boot entry
+// picked by hand after a cold boot, never the default.
+// The DMC part of the 2026-10-09 pbp-power overlay (~/claude/backups/pbp-power.dts.with-dmc): Gru-kevin's steps
+// minus its 928 MHz one, all at the 900 mV vdd_center (RK808 DCDC_REG1) already runs at, plus its controller
+// idle power-down/self-refresh timings. Governor: the driver's simple_ondemand.
+/dts-v1/;
+/plugin/;
+
+/ {
+	fragment@0 {
+		target-path = "/";
+		__overlay__ {
+			dmc_opp: opp-table-dmc {
+				compatible = "operating-points-v2";
+				opp-328000000 { opp-hz = /bits/ 64 <328000000>; opp-microvolt = <900000>; };
+				opp-416000000 { opp-hz = /bits/ 64 <416000000>; opp-microvolt = <900000>; };
+				opp-666000000 { opp-hz = /bits/ 64 <666000000>; opp-microvolt = <900000>; };
+				opp-856000000 { opp-hz = /bits/ 64 <856000000>; opp-microvolt = <900000>; };
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&dmc>;
+		__overlay__ {
+			status = "okay";
+			operating-points-v2 = <&dmc_opp>;
+			center-supply = <&vdd_center>;
+			rockchip,pd-idle-ns = <160>;
+			rockchip,sr-idle-ns = <10240>;
+			rockchip,sr-mc-gate-idle-ns = <40960>;
+			rockchip,srpd-lite-idle-ns = <61440>;
+			rockchip,standby-idle-ns = <81920>;
+			rockchip,ddr3_odt_dis_freq = <666000000>;
+			rockchip,lpddr3_odt_dis_freq = <666000000>;
+			rockchip,lpddr4_odt_dis_freq = <666000000>;
+			rockchip,sr-mc-gate-idle-dis-freq-hz = <800000000>;
+			rockchip,srpd-lite-idle-dis-freq-hz = <0>;
+			rockchip,standby-idle-dis-freq-hz = <928000000>;
+			rockchip,pd-idle-dis-freq-hz = <800000000>;
+			rockchip,sr-idle-dis-freq-hz = <800000000>;
+		};
+	};
+};

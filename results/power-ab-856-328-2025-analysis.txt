@@ -1,0 +1,21 @@
+phase 1: 856MHz  60 samples  V 3.7340V (sd 1.1mV)  gauge I 950mA (3.55W)  bl 1259
+phase 2: 328MHz  61 samples  V 3.7407V (sd 0.9mV)  gauge I 697mA (2.61W)  bl 1259
+phase 3: 856MHz  60 samples  V 3.7273V (sd 7.3mV)  gauge I 741mA (2.76W)  bl 1259
+phase 4: 328MHz  61 samples  V 3.7320V (sd 8.3mV)  gauge I 648mA (2.42W)  bl 1259
+phase 5: 856MHz  61 samples  V 3.7272V (sd 1.7mV)  gauge I 724mA (2.70W)  bl 1259
+phase 6: 328MHz  61 samples  V 3.7317V (sd 5.6mV)  gauge I 644mA (2.40W)  bl 1423/1259
+
+328 phase 2 vs 856 neighbours: dV +10.0mV -> 129mA = 0.48W less;  gauge: +148mA = +0.55W
+328 phase 4 vs 856 neighbours: dV +4.8mV -> 62mA = 0.23W less;  gauge: +84mA = +0.31W
+328 phase 6 vs 856 neighbours: dV +4.5mV -> 58mA = 0.22W less;  gauge: +80mA = +0.30W
+
+mean: voltage method 0.31W saved at 328MHz, gauge +0.39W
+phase 1 856MHz t=30-90s  median V 3.7340  samples >5mV below median: 0  bl changed at t=[]
+phase 2 328MHz t=121-182s  median V 3.7410  samples >5mV below median: 0  bl changed at t=[]
+phase 3 856MHz t=213-273s  median V 3.7300  samples >5mV below median: 10  bl changed at t=[]
+phase 4 328MHz t=304-365s  median V 3.7360  samples >5mV below median: 25  bl changed at t=[]
+phase 5 856MHz t=396-456s  median V 3.7280  samples >5mV below median: 5  bl changed at t=[]
+phase 6 328MHz t=487-548s  median V 3.7340  samples >5mV below median: 6  bl changed at t=['487']
+328 phase 2: +9.0mV -> 0.43W less (2 neighbour(s))
+328 phase 4: +7.0mV -> 0.34W less (2 neighbour(s))
+328 phase 6: +6.0mV -> 0.29W less (1 neighbour(s))

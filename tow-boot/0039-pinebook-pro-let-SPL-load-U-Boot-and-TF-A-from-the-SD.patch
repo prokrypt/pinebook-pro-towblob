@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: prokrypt <prokrypt@edited.us>
+Date: Wed, 28 Oct 2026 17:13:14 -0700
+Subject: [PATCH] pinebook-pro: let SPL load U-Boot and TF-A from the SD card
+ first
+
+SPL looked for the U-Boot FIT (U-Boot + TF-A) on the boot device it was
+loaded from first, so booting from SPI it always used the FIT in the
+flash. Try the SD card first (FIT at sector 0x4000, 8 MB in), then SPI,
+then the eMMC. A card without a FIT there (all zeros before its first
+partition) fails the image check and SPL goes on to the SPI flash as
+before.
+
+This lets a test TF-A (and U-Boot) be booted by writing a FIT to an SD
+card, with the proven one in SPI as the fallback: pull the card, or zero
+those sectors, and the next boot uses the flash again. Only TPL and SPL
+stay fixed in SPI.
+---
+ arch/arm/dts/rk3399-pinebook-pro-u-boot.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/dts/rk3399-pinebook-pro-u-boot.dtsi b/arch/arm/dts/rk3399-pinebook-pro-u-boot.dtsi
+index 240f8b35..63cab749 100644
+--- a/arch/arm/dts/rk3399-pinebook-pro-u-boot.dtsi
++++ b/arch/arm/dts/rk3399-pinebook-pro-u-boot.dtsi
+@@ -8,7 +8,7 @@
+ 
+ / {
+ 	chosen {
+-		u-boot,spl-boot-order = "same-as-spl", &sdhci, &spiflash, &sdmmc;
++		u-boot,spl-boot-order = &sdmmc, &spiflash, &sdhci;
+ 	};
+ 
+ 	config {
+-- 
+2.56.0
+

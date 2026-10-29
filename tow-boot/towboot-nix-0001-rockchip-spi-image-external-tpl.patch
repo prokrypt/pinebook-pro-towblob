@@ -1,0 +1,14 @@
+--- build/Tow-Boot/modules/hardware/rockchip/default.nix.orig	2026-10-28 18:35:37.320271882 -0700
++++ build/Tow-Boot/modules/hardware/rockchip/default.nix	2026-10-28 18:38:03.672893056 -0700
+@@ -79,9 +79,9 @@
+             (mkIf (variant == "spi") ''
+               echo ":: Preparing image for SPI flash..."
+               (PS4=" $ "; set -x
+-              tools/mkimage -n rk3399 -T rkspi -d tpl/u-boot-tpl-dtb.bin:spl/u-boot-spl-dtb.bin spl.bin
++              tools/mkimage -n rk3399 -T rkspi -d ''${ROCKCHIP_TPL:-tpl/u-boot-tpl-dtb.bin}:spl/u-boot-spl-dtb.bin spl.bin
+               # 512K here is 0x80000 CONFIG_SYS_SPI_U_BOOT_OFFS
+-              cat <(dd if=spl.bin bs=512K conv=sync) u-boot.itb > $out/binaries/Tow-Boot.$variant.bin
++              cat <(dd if=spl.bin bs=''${SPI_UBOOT_PAD:-512K} conv=sync) u-boot.itb > $out/binaries/Tow-Boot.$variant.bin
+               )
+             '')
+             (mkIf (variant != "spi") ''

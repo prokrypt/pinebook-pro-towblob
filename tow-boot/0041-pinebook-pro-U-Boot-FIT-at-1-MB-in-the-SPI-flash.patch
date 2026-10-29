@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: prokrypt <prokrypt@edited.us>
+Date: Wed, 28 Oct 2026 18:38:03 -0700
+Subject: [PATCH] pinebook-pro: U-Boot FIT at 1 MB in the SPI flash
+
+With Rockchip's DDR init blob as TPL (146 KB, twice U-Boot's TPL), TPL +
+SPL take about 540 KB in the SPI flash (rkspi stores 2 KB per 4 KB page),
+past the 512 KB where the U-Boot FIT used to start. Move it to 1 MB.
+Tow-Boot's build rewrites this value from 0x60000 to its own 0x80000;
+that sed no longer matches, so the 1 MB set here stays. The recipe sets
+CONFIG_SYS_SPI_U_BOOT_OFFS and the image padding to match.
+---
+ arch/arm/dts/rk3399-pinebook-pro-u-boot.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/dts/rk3399-pinebook-pro-u-boot.dtsi b/arch/arm/dts/rk3399-pinebook-pro-u-boot.dtsi
+index 63cab749..0672a110 100644
+--- a/arch/arm/dts/rk3399-pinebook-pro-u-boot.dtsi
++++ b/arch/arm/dts/rk3399-pinebook-pro-u-boot.dtsi
+@@ -12,7 +12,7 @@
+ 	};
+ 
+ 	config {
+-		u-boot,spl-payload-offset = <0x60000>; /* @ 384KB */
++		u-boot,spl-payload-offset = <0x100000>; /* @ 1MB */
+ 	};
+ };
+ 
+-- 
+2.56.0
+

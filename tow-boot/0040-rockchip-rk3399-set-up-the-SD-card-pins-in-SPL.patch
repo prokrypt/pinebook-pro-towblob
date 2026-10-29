@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: prokrypt <prokrypt@edited.us>
+Date: Wed, 28 Oct 2026 17:38:31 -0700
+Subject: [PATCH] rockchip: rk3399: set up the SD card pins in SPL
+
+SPL's device tree has its pinctrl properties removed
+(OF_SPL_REMOVE_PROPS), so SPL never muxes the SD card pins. That works
+when the BootROM itself booted from the card, because it leaves them set
+up, but an SPL started from SPI that tries the card first (patch 0039)
+finds GPIO4_B0-B5 still plain GPIOs: every command times out and SPL goes
+on to SPI after ~20 ms, so a FIT on the card is never used.
+
+Set them to the SD function in arch_cpu_init(), SPL only (not TPL), with
+the pulls Linux uses: pull-up on D0-D3 and CMD, none on CLK.
+---
+ arch/arm/mach-rockchip/rk3399/rk3399.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/arch/arm/mach-rockchip/rk3399/rk3399.c b/arch/arm/mach-rockchip/rk3399/rk3399.c
+index 332d4887..9d379fae 100644
+--- a/arch/arm/mach-rockchip/rk3399/rk3399.c
++++ b/arch/arm/mach-rockchip/rk3399/rk3399.c
+@@ -107,6 +107,27 @@ int arch_cpu_init(void)
+ 	/*  eMMC clock generator: disable the clock multipilier */
+ 	grf = syscon_get_first_range(ROCKCHIP_SYSCON_GRF);
+ 	rk_clrreg(&grf->emmccore_con[11], 0x0ff);
++
++#if !defined(CONFIG_TPL_BUILD)
++	/*
++	 * SD card pins (GPIO4_B0-B5) to the SD function, pull-up on data and
++	 * CMD, none on CLK (as Linux sets them). The BootROM only sets them up
++	 * when it boots from the card itself, and SPL's device tree has no
++	 * pinctrl properties, so an SPL started from SPI couldn't talk to it.
++	 */
++	rk_clrsetreg(&grf->gpio4b_iomux,
++		     GRF_GPIO4B0_SEL_MASK | GRF_GPIO4B1_SEL_MASK |
++		     GRF_GPIO4B2_SEL_MASK | GRF_GPIO4B3_SEL_MASK |
++		     GRF_GPIO4B4_SEL_MASK | GRF_GPIO4B5_SEL_MASK,
++		     GRF_SDMMC_DATA0 << GRF_GPIO4B0_SEL_SHIFT |
++		     GRF_SDMMC_DATA1 << GRF_GPIO4B1_SEL_SHIFT |
++		     GRF_SDMMC_DATA2 << GRF_GPIO4B2_SEL_SHIFT |
++		     GRF_SDMMC_DATA3 << GRF_GPIO4B3_SEL_SHIFT |
++		     GRF_SDMMC_CLKOUT << GRF_GPIO4B4_SEL_SHIFT |
++		     GRF_SDMMC_CMD << GRF_GPIO4B5_SEL_SHIFT);
++	/* 2 bits per pin, 1 = pull-up */
++	rk_clrsetreg(&grf->gpio4_p[1], 0xfff, 0x455);
++#endif
+ #endif
+ 
+ 	return 0;
+-- 
+2.56.0
+
