@@ -4,8 +4,12 @@ DRAM frequency scaling (DMC devfreq) on the Pinebook Pro (RK3399, 4GB LPDDR4) wi
 by booting [Tow-Boot](https://github.com/Tow-Boot/Tow-Boot) with Rockchip's DDR blob as TPL and
 Rockchip's BL31. Tow-Boot + blob = towblob.
 
-**Status (2026-10-28): works on one Pinebook Pro, test card only. Private, not for others yet.**
-Suspend under the vendor BL31 is untested; the loader only lives on a microSD card.
+**Status (2026-10-29): in daily use on one Pinebook Pro, loader on the eMMC + SPI flash. Private, not for others yet.**
+Suspend/resume under the vendor BL31 works (drain 0.43%/h, same as upstream TF-A), with two
+workarounds: after a real suspend the BL31 leaves the DDR monitor frozen (DMC sticks at its top speed),
+re-armed from userspace at each wake (`ddrmon-rearm`); and the BL31's sleep settings (PWRMODE_CON,
+VSEL pins) are sent once per boot by a small module (`rk_suspend_cfg`, SIP 0x82000003). Both live in
+the laptop's own setup, not here yet.
 
 ## Why
 
@@ -54,8 +58,16 @@ loader/build-idbloader.sh u-boot-spl.bin idbloader.img 933
 sudo dd if=idbloader.img of=/dev/mmcblkN bs=512 seek=64 oflag=direct conv=fsync
 ```
 
-The blob is downloaded from rkbin and checked against `loader/rkbin.sha256`; no Rockchip
-binaries are stored here. The U-Boot FIT (vendor BL31) goes at sector 16384.
+The blob is downloaded from rkbin and checked against `loader/rkbin.sha256` (which also lists the
+BL31 elf); no Rockchip binaries are stored here. The U-Boot FIT (vendor BL31) goes at sector 16384.
+
+On my machine (since 2026-10-28/29): idblock on the **eMMC** at sector 64, the vendor-BL31 FIT in
+the **SPI flash at 1MB** (first 1MB erased, so the boot ROM skips the SPI and starts the eMMC
+idblock) and the same FIT again at eMMC sector 16384 as the fallback. The SPL's order is
+`sdmmc, spiflash, sdhci`, so **a card with a U-Boot FIT at sector 16384 (Manjaro ARM, Armbian,
+Tow-Boot installer cards) is booted first on a cold boot**: with the blob under an upstream
+TF-A, DMA stays secure (no SPI flash, no sound) and the first DRAM rate change hangs. Keep such
+cards out at power-on, or build the loader with `spiflash, sdhci` first.
 
 ## Layout
 
