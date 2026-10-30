@@ -4,7 +4,7 @@ DRAM frequency scaling (DMC devfreq) on the Pinebook Pro (RK3399, 4GB LPDDR4) wi
 by booting [Tow-Boot](https://github.com/Tow-Boot/Tow-Boot) with Rockchip's DDR blob as TPL and
 Rockchip's BL31. Tow-Boot + blob = towblob.
 
-**Status (2026-10-29): in daily use on one Pinebook Pro, loader on the eMMC + SPI flash. Private, not for others yet.**
+**Status (2026-10-29): in daily use on one Pinebook Pro, loader in the SPI flash (eMMC copy as fallback). Private, not for others yet.**
 Suspend/resume under the vendor BL31 works (drain 0.43%/h, same as upstream TF-A), with two
 workarounds: after a real suspend the BL31 leaves the DDR monitor frozen (DMC sticks at its top speed),
 re-armed from userspace at each wake (`ddrmon-rearm`); and the BL31's sleep settings (PWRMODE_CON,
@@ -33,7 +33,8 @@ with the screen on.
    at each speed in its lists and leaves the results at DRAM 0x100000 (5 × 1480-byte records,
    magic 0xfe12cd56).
 2. **SPL = Tow-Boot's U-Boot SPL**, patched to load U-Boot + TF-A from the SD card
-   ([tow-boot/](tow-boot/), patches 0039, 0040).
+   ([tow-boot/](tow-boot/), patches 0039, 0040). The SPL flashed on my machine tries the SPI
+   first (see below).
 3. **BL31 = Rockchip's** (`rk3399_bl31_v1.36.elf`, in the FIT, see `tow-boot/pbp2z-a.nix`). Its
    `ROCKCHIP_SIP_DRAM_FREQ` SMC (0x82000008) does the switching, but **only to speeds the blob
    trained**: any other rate returns success and changes nothing (kernel: "Got wrong frequency").
@@ -61,13 +62,18 @@ sudo dd if=idbloader.img of=/dev/mmcblkN bs=512 seek=64 oflag=direct conv=fsync
 The blob is downloaded from rkbin and checked against `loader/rkbin.sha256` (which also lists the
 BL31 elf); no Rockchip binaries are stored here. The U-Boot FIT (vendor BL31) goes at sector 16384.
 
-On my machine (since 2026-10-28/29): idblock on the **eMMC** at sector 64, the vendor-BL31 FIT in
-the **SPI flash at 1MB** (first 1MB erased, so the boot ROM skips the SPI and starts the eMMC
-idblock) and the same FIT again at eMMC sector 16384 as the fallback. The SPL's order is
-`sdmmc, spiflash, sdhci`, so **a card with a U-Boot FIT at sector 16384 (Manjaro ARM, Armbian,
-Tow-Boot installer cards) is booted first on a cold boot**: with the blob under an upstream
-TF-A, DMA stays secure (no SPI flash, no sound) and the first DRAM rate change hangs. Keep such
-cards out at power-on, or build the loader with `spiflash, sdhci` first.
+For the SPI flash, `mkimage -n rk3399 -T rkspi -d <blob>:<spl> idblock-spi.img` makes the
+idblock (2KB of data per 4KB page, ~528KB, written at offset 0); the FIT goes at 1MB (patch 0041).
+
+On my machine (since 2026-10-29): the rkspi idblock in **SPI 0–528KB**, the vendor-BL31 FIT at
+**SPI 1MB**. The SPL's order is `spiflash, sdhci, sdmmc`, patched in the flashed binary only
+(patch 0039 still has the card first), so a card with a U-Boot FIT at sector 16384 no longer
+takes over the boot. The eMMC still holds the idblock at sector 64 and the FIT at 16384 as a
+fallback; the boot ROM ignores them while the SPI has a valid idblock. Cold boot OK on
+2026-10-29. If the SPI copy breaks, only maskrom recovers the machine.
+Before that (2026-10-28/29) the idblock was on the eMMC with the card first, and a Manjaro/Armbian
+card at power-on booted the blob under an upstream TF-A: DMA stayed secure and the first DRAM
+rate change hung.
 
 ## Layout
 
@@ -84,7 +90,7 @@ cards out at power-on, or build the loader with `spiflash, sdhci` first.
 Built from [pinebook-pro-towboot](https://github.com/prokrypt/pinebook-pro-towboot) (its 007-pbp2y)
 plus, in [tow-boot/](tow-boot/):
 
-- `0039`: SPL loads U-Boot + TF-A from the SD card first (FIT at sector 16384), SPI as fallback
+- `0039`: SPL loads U-Boot + TF-A from the SD card first (FIT at sector 16384), SPI as fallback (the SPL I flashed has spiflash first, binary-patched)
 - `0040`: SPL sets up the SD card pins itself (needed when SPL starts from SPI)
 - `0041`: U-Boot FIT at 1MB in SPI (blob + SPL no longer fit in 512KB)
 - `towboot-nix-0001`: Tow-Boot's nix build takes an external TPL (`$ROCKCHIP_TPL`, `$SPI_UBOOT_PAD`)
@@ -93,5 +99,6 @@ plus, in [tow-boot/](tow-boot/):
 
 ## Missing
 
-- Suspend/resume under the vendor BL31
-- A permanent place for the loader (SPI flash or eMMC)
+- The spiflash-first SPL order as a patch in tow-boot/ (only binary-patched so far)
+- The `ddrmon-rearm` and `rk_suspend_cfg` workarounds (in the laptop's setup, not here)
+- Longer 928MHz memtester runs
