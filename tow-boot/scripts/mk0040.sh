@@ -1,7 +1,9 @@
 #!/bin/sh
 # Make patch 0040 (SD pin mux in SPL) on top of ub-patched (patch stack + 0039).
 set -e
-cd /tmp/claude/towboot/ub-patched
+# W: work dir holding the pinebook-pro-towboot checkout and ub-patched (U-Boot tree with the patch stack)
+W=${W:?set W to the work dir}
+cd $W/ub-patched
 python3 - <<'EOF'
 p = "arch/arm/mach-rockchip/rk3399/rk3399.c"
 s = open(p).read()
@@ -50,8 +52,8 @@ on to SPI after ~20 ms, so a FIT on the card is never used.
 Set them to the SD function in arch_cpu_init(), SPL only (not TPL), with
 the pulls Linux uses: pull-up on D0-D3 and CMD, none on CLK.
 EOF
-git format-patch -1 --stdout --zero-commit | sed "s/^Date: .*/Date: $(date -R)/" > /tmp/claude/towboot/pinebook-pro-towboot/patches/0040-rockchip-rk3399-set-up-the-SD-card-pins-in-SPL.patch
-cd /tmp/claude/towboot/pinebook-pro-towboot
+git format-patch -1 --stdout --zero-commit | sed "s/^Date: .*/Date: $(date -R)/" > $W/pinebook-pro-towboot/patches/0040-rockchip-rk3399-set-up-the-SD-card-pins-in-SPL.patch
+cd $W/pinebook-pro-towboot
 python3 - <<'EOF'
 s = open("nix/pbp2z-sd.nix").read()
 p39 = "    ../patches/0039-pinebook-pro-let-SPL-load-U-Boot-and-TF-A-from-the-SD.patch\n"

@@ -1,0 +1,5 @@
+#!/bin/sh
+# systemd system-sleep hook: install as /usr/lib/systemd/system-sleep/ddrmon-rearm (executable),
+# with ddrmon-rearm in /usr/local/bin. Re-arms the DDR monitor after every resume.
+[ "$1" = post ] && exec /usr/local/bin/ddrmon-rearm
+exit 0

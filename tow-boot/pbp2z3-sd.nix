@@ -1,3 +1,5 @@
+# 2026-11-17: + patch 0042, SPL boot order SPI flash -> eMMC -> SD card (overrides 0039's card-first
+# order; the SPL in use since 2026-10-29 had this order binary-patched in). Built 2026-11-17: SPL byte-identical to that binary-patched one.
 # 007-pbp2z3-sd: pbp2z2-sd with Rockchip's DDR init blob (rkbin rk3399_ddr_800MHz_v1.30.bin) as TPL
 # instead of U-Boot's: the vendor BL31 can't change the DRAM rate after U-Boot's TPL (2026-10-28 tests).
 # Based on 007-pbp2z2-sd: pbp2z-sd + SPL sets up the SD card pins itself (patch 0040; pbp2z-sd never
@@ -99,6 +101,7 @@
     ../patches/0039-pinebook-pro-let-SPL-load-U-Boot-and-TF-A-from-the-SD.patch
     ../patches/0040-rockchip-rk3399-set-up-the-SD-card-pins-in-SPL.patch
     ../patches/0041-pinebook-pro-U-Boot-FIT-at-1-MB-in-the-SPI-flash.patch
+    ../patches/0042-pinebook-pro-SPL-boot-order-SPI-flash-eMMC-SD-card.patch
   ];
   Tow-Boot.builder.additionalArguments.BL31 = lib.mkForce "${
     pkgs.Tow-Boot.armTrustedFirmwareRK3399.overrideAttrs (old: {

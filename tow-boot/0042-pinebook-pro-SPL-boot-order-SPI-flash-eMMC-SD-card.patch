@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: prokrypt <prokrypt@edited.us>
+Date: Tue, 17 Nov 2026 14:00:00 -0800
+Subject: [PATCH] pinebook-pro: SPL boot order SPI flash, eMMC, SD card
+
+Patch 0039 made SPL load the U-Boot FIT from the SD card first. With
+Rockchip's DDR blob as TPL and Rockchip's BL31 in the SPI FIT, that is a
+trap: any card with a U-Boot FIT at sector 0x4000 (Manjaro ARM, Armbian,
+Tow-Boot installer cards) inserted at power-on is booted instead, its
+upstream TF-A leaves the DMACs secure-only and the first DRAM rate change
+hangs the machine.
+
+Try the SPI flash first, then the eMMC, then the SD card. This is the
+order the SPL in daily use since 2026-10-29 had binary-patched into its
+device tree; this patch makes the source match it.
+---
+ arch/arm/dts/rk3399-pinebook-pro-u-boot.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/dts/rk3399-pinebook-pro-u-boot.dtsi b/arch/arm/dts/rk3399-pinebook-pro-u-boot.dtsi
+--- a/arch/arm/dts/rk3399-pinebook-pro-u-boot.dtsi
++++ b/arch/arm/dts/rk3399-pinebook-pro-u-boot.dtsi
+@@ -8,7 +8,7 @@
+ 
+ / {
+ 	chosen {
+-		u-boot,spl-boot-order = &sdmmc, &spiflash, &sdhci;
++		u-boot,spl-boot-order = &spiflash, &sdhci, &sdmmc;
+ 	};
+ 
+ 	config {
+-- 
+2.56.0

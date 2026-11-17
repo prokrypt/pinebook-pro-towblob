@@ -1,6 +1,7 @@
 #!/bin/bash
+# 928MHz is considered unstable (see kernel/pbp-dmc-928.dts): run this on a test boot, not with data you care about.
 # 5min memtester at a fixed 928MHz DRAM clock: 2 x 512MB, one per big core (cpu4, cpu5). Raw output per instance.
-D=/sys/class/devfreq/memory-controller; O=/tmp/claude/dmc-928/mt
+D=/sys/class/devfreq/memory-controller; O=${OUT_DIR:-.}/mt; mkdir -p "$O"
 restore() { echo simple_ondemand > $D/governor; echo "governor back to $(cat $D/governor)"; }
 trap restore EXIT
 echo userspace > $D/governor; echo 928000000 > $D/userspace/set_freq

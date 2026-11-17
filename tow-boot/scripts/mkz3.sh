@@ -1,7 +1,9 @@
 #!/bin/sh
 # pbp2z3-sd: pbp2z2-sd with Rockchip's DDR init blob as TPL (2026-10-28).
 set -e
-cd /tmp/claude/towboot/pinebook-pro-towboot
+# W: work dir holding the pinebook-pro-towboot checkout and ub-patched (U-Boot tree with the patch stack)
+W=${W:?set W to the work dir}
+cd $W/pinebook-pro-towboot
 cp ../rkbin/bin/rk33/rk3399_ddr_800MHz_v1.30.bin blobs/
 sha256sum blobs/rk3399_ddr_800MHz_v1.30.bin
 

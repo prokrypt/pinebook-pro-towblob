@@ -1,0 +1,41 @@
+#!/usr/bin/python3 -I
+# ddrmon-rearm: put the RK3399 DDR monitor (DFI, 0xff630000) back in software counting mode after a
+# real suspend. The vendor BL31 leaves DDRMON_CTRL at 0x08 (hardware mode, counters frozen) and the
+# kernel never rewrites it (rockchip-dfi usecount stays >0 across suspend: the rockchip_ddr perf PMU
+# holds one), so DMC devfreq reads zero load time and sticks at max. Same 3 writes as
+# rockchip_dfi_enable() for LPDDR4. Upper 16 bits of each write = bit mask. Run as root.
+import mmap, os, struct, sys, time
+
+BASE, CTRL = 0xff630000, 0x04
+SOFTWARE_EN, LPDDR4 = 1 << 1, 1 << 4
+WRITES = (0x000b0000,   # TIMER_CNT_EN, SOFTWARE_EN, HARDWARE_EN = 0
+          0x00540010,   # LPDDR23 = 0, LPDDR4 = 1, LPDDR5 = 0
+          0x00020002)   # SOFTWARE_EN = 1
+COUNT = (0x28, 0x3c)    # CH0/CH1_COUNT_NUM
+
+if not os.path.exists('/sys/bus/platform/drivers/rockchip-dfi/ff630000.dfi'):
+    sys.exit('ddrmon-rearm: no rockchip-dfi at ff630000, nothing done')
+try:
+    fd = os.open('/dev/mem', os.O_RDWR | os.O_SYNC)
+    m = mmap.mmap(fd, 0x1000, mmap.MAP_SHARED, mmap.PROT_READ | mmap.PROT_WRITE, offset=BASE)
+except OSError as e:   # no /dev/mem, or a kernel with IO_STRICT_DEVMEM / lockdown
+    sys.exit(f'ddrmon-rearm: cannot map 0x{BASE:x} through /dev/mem ({e.strerror}): '
+             'DMC stays at its top speed until the next boot')
+rd = lambda o: struct.unpack_from('<I', m, o)[0]
+before = rd(CTRL)
+if before & SOFTWARE_EN and before & LPDDR4:
+    print(f'ddrmon-rearm: CTRL=0x{before:08x}, already counting')
+    sys.exit(0)
+for attempt in (1, 2):   # one retry: the counters have always moved first time so far
+    for v in WRITES:
+        struct.pack_into('<I', m, CTRL, v)
+    c0 = [rd(o) for o in COUNT]
+    time.sleep(0.05)
+    c1 = [rd(o) for o in COUNT]
+    ok = all(a != b for a, b in zip(c0, c1))
+    if ok:
+        break
+    time.sleep(0.2)
+print(f'ddrmon-rearm: CTRL 0x{before:08x} -> 0x{rd(CTRL):08x}, counters {"moving" if ok else "NOT moving"}'
+      f'{"" if attempt == 1 else f" (attempt {attempt})"}')
+sys.exit(0 if ok else 1)

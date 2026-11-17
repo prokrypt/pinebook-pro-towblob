@@ -1,7 +1,9 @@
 #!/bin/sh
 # pbp2z3-sd, second try: U-Boot FIT at 1 MB in SPI (Rockchip's DDR blob makes TPL+SPL ~540 KB, past 512 KB).
 set -e
-cd /tmp/claude/towboot/ub-patched
+# W: work dir holding the pinebook-pro-towboot checkout and ub-patched (U-Boot tree with the patch stack)
+W=${W:?set W to the work dir}
+cd $W/ub-patched
 python3 - <<'EOF'
 p = "arch/arm/dts/rk3399-pinebook-pro-u-boot.dtsi"
 s = open(p).read()
@@ -19,9 +21,9 @@ Tow-Boot's build rewrites this value from 0x60000 to its own 0x80000;
 that sed no longer matches, so the 1 MB set here stays. The recipe sets
 CONFIG_SYS_SPI_U_BOOT_OFFS and the image padding to match.
 EOF
-git format-patch -1 --stdout --zero-commit | sed "s/^Date: .*/Date: $(date -R)/" > /tmp/claude/towboot/pinebook-pro-towboot/patches/0041-pinebook-pro-U-Boot-FIT-at-1-MB-in-the-SPI-flash.patch
+git format-patch -1 --stdout --zero-commit | sed "s/^Date: .*/Date: $(date -R)/" > $W/pinebook-pro-towboot/patches/0041-pinebook-pro-U-Boot-FIT-at-1-MB-in-the-SPI-flash.patch
 
-cd /tmp/claude/towboot/pinebook-pro-towboot
+cd $W/pinebook-pro-towboot
 m=build/Tow-Boot/modules/hardware/rockchip/default.nix
 python3 - "$m" <<'EOF'
 import sys

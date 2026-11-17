@@ -3,7 +3,7 @@
 # 1 sample/s of battery voltage + the gauge's current. swayidle/bdowner paused so brightness stays put.
 D=/sys/class/devfreq/memory-controller; B=/sys/class/power_supply/cw2015-battery
 BL=/sys/class/backlight/edp-backlight/brightness
-OUT=/tmp/claude/dmc-power/run-$(date +%H%M).csv
+OUT=${OUT_DIR:-.}/run-$(date +%H%M).csv
 PIDS=$(pgrep -x swayidle; pgrep -x bdowner)
 restore() { echo simple_ondemand > $D/governor; [ -n "$PIDS" ] && kill -CONT $PIDS; echo "restored (governor $(cat $D/governor), resumed: $PIDS)"; }
 trap 'restore; exit' INT TERM

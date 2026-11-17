@@ -1,12 +1,14 @@
+// UNSTABLE: 928MHz is considered unstable on the author's machine. It runs at the same 900mV vdd_center as the
+// other steps; Rockchip lists 928 as disabled on its LPDDR4 EVB and Gru Chromebooks needed 925mV for it. A 5min
+// memtester passed, which proves little: errors would be silent bit flips. Use with caution, never as a default.
 // TEST E (2026-10-28): + 928MHz, needs the 933MHz blob (rk3399_ddr_933MHz_v1.30.bin) as TPL: its second speed list is
 // 328 666 928 where the 800 blob has 328 666 0. Rockchip lists 928 at 900mV but disabled on its LPDDR4 EVB (rk3399-evb-ind.dtsi).
 // Built from TEST D2: the blob speeds the vendor BL31 really switches to, 328 416 666 856MHz.
 // The blob also lists 528 (table at blob offset 0x23710), but the BL31 ignores it like 400/800 ("Got wrong frequency").
-// Pinebook Pro DRAM frequency scaling (DMC devfreq), 2026-10-28 test (~/notes/System/Boot_Chain/Tow-Boot_pbp2z.txt).
-// Only works with Rockchip's BL31 (rkbin rk3399_bl31_v1.36.elf, the pbp2z-a FIT on the SD card): with upstream
-// TF-A the first rate change locks the machine up (2026-10-09). So the dtb with this is only for a boot entry
-// picked by hand after a cold boot, never the default.
-// The DMC part of the 2026-10-09 pbp-power overlay (~/claude/backups/pbp-power.dts.with-dmc): Gru-kevin's steps
+// Pinebook Pro DRAM frequency scaling (DMC devfreq), first tested 2026-10-28.
+// Only works with Rockchip's BL31 (rkbin rk3399_bl31_v1.36.elf, in the pbp2z-a FIT): with upstream TF-A the
+// first rate change locks the machine up (2026-10-09). Only use it with the towblob loader.
+// Based on the DMC part of an earlier (2026-10-09) overlay: Gru-kevin's steps
 // minus its 928 MHz one, all at the 900 mV vdd_center (RK808 DCDC_REG1) already runs at, plus its controller
 // idle power-down/self-refresh timings. Governor: the driver's simple_ondemand.
 /dts-v1/;
